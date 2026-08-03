@@ -11,7 +11,12 @@ metadata:
   annotations:
    nginx.ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "X-Forwarded-For $http_x_forwarded_for";
+   {{- if .Values.ingress.ssl.enabled }}
+   nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+   cert-manager.io/cluster-issuer: {{ .Values.ingress.ssl.clusterIssuer | quote }}
+   {{- else }}
    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+   {{- end }}
    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
    {{- range $key, $value := .Values.ingress.annotations }}
    {{ $key }}: {{ $value | quote }}
@@ -31,8 +36,15 @@ spec:
             port:
               name: http-tcp
 
-  {{- if .Values.ingress.tls }}
+  {{- if .Values.ingress.ssl.enabled }}
   tls:
-    {{- toYaml .Values.ingress.tls | indent 4 | printf "\n%s" }}
+  - secretName: {{ .Values.ingress.ssl.secretName | default (printf "%s-tls" .Values.ingress.host) }}
+    hosts:
+    - {{ .Values.ingress.host }}
+    {{- if .Values.ingress.ssl.hosts }}
+    {{- range .Values.ingress.ssl.hosts }}
+    - {{ . }}
+    {{- end }}
+    {{- end }}
   {{- end -}}
 {{- end }}

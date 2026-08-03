@@ -1,0 +1,51 @@
+# Example configuration with SSL/TLS enabled
+# 
+# Prerequisites:
+# - cert-manager installed in your cluster
+# - ClusterIssuer configured (e.g., letsencrypt-prod)
+#
+# Usage:
+# helm upgrade -i twenty-crm twentycrm/twentycrm -f values-ssl.yaml
+
+image: twentycrm/twenty:latest
+
+# REQUIRED: Generate with: openssl rand -base64 32
+secrets:
+  encryptionKey: "REPLACE_WITH_YOUR_ENCRYPTION_KEY"
+
+server:
+  replicas: 1
+  storage: 10Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+
+worker:
+  replicas: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+
+# Database configuration
+db:
+  enabled: true
+  storage: 10Gi
+  password: "REPLACE_WITH_STRONG_PASSWORD"
+
+# Redis configuration
+redis:
+  enabled: true
+
+# Ingress with SSL/TLS
+ingress:
+  enabled: true
+  host: crm.agenda-sms.com
+  class: nginx
+  
+  # Enable SSL/TLS with cert-manager
+  ssl:
+    enabled: true
+    clusterIssuer: "letsencrypt-prod"
+    secretName: "crm-agenda-sms-com-tls"

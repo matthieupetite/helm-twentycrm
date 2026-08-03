@@ -85,3 +85,17 @@ ingress:
   enabled: true
   host: crm.example.com
   class: nginx
+  
+  # Additional custom annotations (optional)
+  annotations: {}
+  
+  # SSL/TLS Configuration
+  ssl:
+    enabled: false
+    # Cluster issuer for cert-manager (e.g., "letsencrypt-prod", "letsencrypt-staging")
+    clusterIssuer: "letsencrypt-prod"
+    # TLS secret name (will be auto-generated if using cert-manager)
+    secretName: ""
+    # Additional TLS hosts (optional, defaults to ingress.host)
+    # hosts:
+    #   - additional-host.example.com

@@ -83,8 +83,38 @@ For a complete list of configuration fields, check the [values.yaml](./charts/tw
 | `ingress.enabled`                | Enable or disable ingress.                                                              | `true`                  |
 | `ingress.host`                   | Hostname for the ingress.                                                               | `crm.example.com`       |
 | `ingress.class`                  | Ingress class name.                                                                      | `nginx`                 |
+| `ingress.annotations`            | Additional custom annotations for the ingress                                            | `{}`                    |
+| `ingress.ssl.enabled`            | Enable SSL/TLS with cert-manager                                                        | `false`                 |
+| `ingress.ssl.clusterIssuer`      | cert-manager cluster issuer name (e.g., `letsencrypt-prod`)                             | `letsencrypt-prod`      |
+| `ingress.ssl.secretName`         | TLS secret name (auto-generated if empty)                                               |                         |
+| `ingress.ssl.hosts`              | Additional TLS hosts (optional)                                                         |                         |
 
 ## Usage Examples
+
+### Enabling SSL/TLS with cert-manager
+
+To enable HTTPS with automatic certificate management:
+
+```yaml
+# values.yaml
+ingress:
+  enabled: true
+  host: crm.agenda-sms.com
+  class: nginx
+  ssl:
+    enabled: true
+    clusterIssuer: "letsencrypt-prod"
+    # secretName is optional - defaults to <host>-tls
+    secretName: "crm-agenda-sms-com-tls"
+```
+
+This will:
+- Add the `cert-manager.io/cluster-issuer` annotation to the ingress
+- Configure TLS with the specified secret name
+- Enable automatic SSL redirect
+- Generate a Let's Encrypt certificate automatically
+
+**Prerequisites:** You must have [cert-manager](https://cert-manager.io/) installed in your cluster with a ClusterIssuer configured.
 
 ### Using External Redis
 
@@ -165,6 +195,10 @@ ingress:
   enabled: true
   host: crm.mycompany.com
   class: nginx
+  ssl:
+    enabled: true
+    clusterIssuer: "letsencrypt-prod"
+    secretName: "crm-mycompany-com-tls"
 ```
 
 ## Documentation

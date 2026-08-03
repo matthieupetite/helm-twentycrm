@@ -45,7 +45,7 @@ spec:
               name: {{ .Release.Name }}-app-secrets
         env:
         - name: SERVER_URL
-          value: "https://{{ .Values.ingress.host }}"
+          value: "{{ if .Values.ingress.ssl.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}"
         - name: DISABLE_DB_MIGRATIONS
           value: "true"
         - name: DISABLE_CRON_JOBS_REGISTRATION
