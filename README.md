@@ -11,6 +11,10 @@ helm repo add twentycrm https://matthieupetite.github.io/helm-twentycrm
 helm upgrade -i twenty-crm twentycrm/twentycrm -f values.yaml
 ```
 
+**Example configurations:**
+- [values-ssl.yaml](./examples/values-ssl.yaml) - Basic deployment with SSL/TLS
+- [values-ha.yaml](./examples/values-ha.yaml) - High Availability deployment with multiple replicas
+
 ## Prerequisites
 
 Before installing, you must generate an encryption key:

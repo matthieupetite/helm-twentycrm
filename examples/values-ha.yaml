@@ -1,0 +1,92 @@
+# High Availability deployment example for Twenty CRM
+# This configuration deploys multiple server and worker replicas for production use
+#
+# Prerequisites:
+# - A storage class that supports ReadWriteMany access mode
+# - Sufficient cluster resources for multiple replicas
+#
+# Deploy with:
+# helm upgrade -i twentycrm twentycrm/twentycrm -f values-ha.yaml
+
+image: twentycrm/twenty:latest
+
+# REQUIRED: Generate with `openssl rand -base64 32`
+secrets:
+  encryptionKey: ""  # MUST be set before deployment
+
+# Server configuration: multiple replicas for high availability
+server:
+  replicas: 2  # Scale to 3+ for higher availability
+  storage: 20Gi
+  
+  # IMPORTANT: Must use ReadWriteMany for HA deployments
+  storageAccessMode: "ReadWriteMany"
+  
+  # IMPORTANT: Must use a storage class that supports ReadWriteMany
+  # Examples: ceph-cephfs, nfs, nfs-client, efs, azurefile, filestore
+  storageClassName: "ceph-cephfs"
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# Worker configuration: multiple replicas for background job processing
+worker:
+  replicas: 2
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# PostgreSQL: Single instance with block storage
+# For HA database, use external managed database (RDS, Cloud SQL, Azure DB)
+db:
+  enabled: true
+  storage: 50Gi
+  storageClassName: "ceph-rbd"  # Block storage is fine for single DB pod
+  password: ""  # Generate strong password
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# Redis: Single instance (in-cluster)
+# For HA Redis, use external managed Redis or Redis Sentinel
+redis:
+  enabled: true
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Ingress with SSL/TLS
+ingress:
+  enabled: true
+  host: crm.example.com  # CHANGE THIS
+  class: nginx
+  ssl:
+    enabled: true
+    clusterIssuer: "letsencrypt-prod"  # Requires cert-manager
+
+# Optional: Use external managed database for full HA
+# externalDb:
+#   enabled: true
+#   postgresConnectionString: "postgres://user:password@db-host:5432/twentycrm"
+
+# Optional: Use external managed Redis for full HA
+# externalRedis:
+#   enabled: true
+#   connectionString: "redis://redis-host:6379"
