@@ -3,9 +3,9 @@ entries:
   twentycrm:
   - apiVersion: v2
     appVersion: latest
-    created: "2026-08-03T13:16:18.874011282Z"
+    created: "2026-08-03T13:36:01.622056099Z"
     description: A Helm chart for Twenty CRM - https://github.com/twentyhq/twenty
-    digest: 6e12ef8e6736249f99431cb0db3f83e31347cba21fa417e689398a9dc9b38ee3
+    digest: 6e86fca9a50c226a7ae90984435762f04a9eaed3bb010677381581863a4c6d1d
     home: https://twenty.com
     keywords:
     - crm
@@ -18,6 +18,6 @@ entries:
     sources:
     - https://github.com/twentyhq/twenty
     urls:
-    - https://matthieupetite.github.io/helm-twentycrm/twentycrm-0.5.0.tgz
-    version: 0.5.0
-generated: "2026-08-03T13:16:18.873447616Z"
+    - https://matthieupetite.github.io/helm-twentycrm/twentycrm-0.6.0.tgz
+    version: 0.6.0
+generated: "2026-08-03T13:36:01.621425119Z"
