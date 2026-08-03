@@ -35,6 +35,18 @@ spec:
       - name: twentycrm-server-data
         persistentVolumeClaim:
           claimName: twentycrm-server-pvc
+      
+      initContainers:
+        # Fix volume permissions for uid=1000 (node user)
+        - name: fix-permissions
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - chown -R 1000:1001 /app/packages/twenty-server/.local-storage && chmod -R 775 /app/packages/twenty-server/.local-storage
+          volumeMounts:
+            - name: twentycrm-server-data
+              mountPath: /app/packages/twenty-server/.local-storage
           
       containers:
       - name: twentycrm-worker
@@ -47,9 +59,9 @@ spec:
         - name: SERVER_URL
           value: "{{ if .Values.ingress.ssl.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}"
         - name: DISABLE_DB_MIGRATIONS
-          value: "true"
+          value: {{ .Values.worker.disableDbMigrations | quote }}
         - name: DISABLE_CRON_JOBS_REGISTRATION
-          value: "true"
+          value: {{ .Values.worker.disableCronJobsRegistration | quote }}
 
         command:
           - yarn

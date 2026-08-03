@@ -42,8 +42,18 @@ spec:
         persistentVolumeClaim:
           claimName: twentycrm-server-pvc
 
-      {{- if .Values.db.enabled }}
       initContainers:
+        # Fix volume permissions for uid=1000 (node user)
+        - name: fix-permissions
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - chown -R 1000:1001 /app/packages/twenty-server/.local-storage && chmod -R 775 /app/packages/twenty-server/.local-storage
+          volumeMounts:
+            - name: twentycrm-server-data
+              mountPath: /app/packages/twenty-server/.local-storage
+      {{- if .Values.db.enabled }}
         # Wait for database to be ready before starting
         - name: wait-db-ready
           image: postgres:16
@@ -77,9 +87,9 @@ spec:
         - name: SERVER_URL
           value: "{{ if .Values.ingress.ssl.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}"
         - name: DISABLE_DB_MIGRATIONS
-          value: "false"
+          value: {{ .Values.server.disableDbMigrations | quote }}
         - name: DISABLE_CRON_JOBS_REGISTRATION
-          value: "false"
+          value: {{ .Values.server.disableCronJobsRegistration | quote }}
 
         ports:
         - containerPort: 3000

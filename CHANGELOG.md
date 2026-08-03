@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026-08-03
+
+### Fixed
+- **Volume Permissions:** Added `fix-permissions` initContainer to both server and worker deployments
+  - Fixes `EACCES: permission denied` errors when writing to persistent storage
+  - Sets proper ownership (uid=1000, gid=1001) and permissions (775) for the node user
+  - Required when using CephFS, NFS, or other shared storage backends
+
+### Changed
+- **Configurable Deployment Flags:** Made `DISABLE_DB_MIGRATIONS` and `DISABLE_CRON_JOBS_REGISTRATION` configurable
+  - Added `server.disableDbMigrations` (default: `false`)
+  - Added `server.disableCronJobsRegistration` (default: `false`)
+  - Added `worker.disableDbMigrations` (default: `true`)
+  - Added `worker.disableCronJobsRegistration` (default: `true`)
+  - Allows fine-tuning which pods handle migrations and cron job registration
+
+### Technical Details
+
+**Permission Issue Context:**
+- Twenty CRM runs as user `node` (uid=1000, gid=1000)
+- Deployment sets `securityContext.fsGroup: 1001`
+- Volumes mounted from CephFS/NFS are owned by `root:1001`
+- Without initContainer, uid=1000 cannot write to volume → permission denied errors
+
+**Solution:**
+- `fix-permissions` initContainer runs as root before main container
+- Changes ownership to `1000:1001` and permissions to `775`
+- Both server and worker pods can now write to shared storage
+
 ## [0.6.0] - 2026-08-03
 
 ### Added

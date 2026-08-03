@@ -1,7 +1,7 @@
 apiVersion: v2
 description: A Helm chart for Twenty CRM - https://github.com/twentyhq/twenty
 name: twentycrm
-version: 0.6.0
+version: 0.6.1
 appVersion: latest
 keywords:
   - crm

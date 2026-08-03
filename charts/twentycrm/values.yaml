@@ -33,6 +33,11 @@ server:
   # Storage access mode - use "ReadWriteMany" for HA deployments with multiple replicas
   # Requires RWX-capable storage class (ceph-cephfs, nfs, efs, azurefile, etc.)
   storageAccessMode: "ReadWriteOnce"
+  
+  # Database migrations and cron jobs for server pods
+  disableDbMigrations: false
+  disableCronJobsRegistration: false
+  
   resources:
     requests:
       memory: "128Mi"
@@ -40,6 +45,12 @@ server:
 
 worker:
   replicas: 1
+  
+  # Database migrations and cron jobs for worker pods
+  # Workers should not run migrations or register cron jobs (server handles this)
+  disableDbMigrations: true
+  disableCronJobsRegistration: true
+  
   resources:
     requests:
       memory: "128Mi"
