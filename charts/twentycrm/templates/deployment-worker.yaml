@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-worker
+  name: twentycrm-worker
   labels:
     app: {{ template "name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
@@ -34,7 +34,7 @@ spec:
       volumes:
       - name: twentycrm-server-data
         persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-server-pvc
+          claimName: twentycrm-server-pvc
           
       containers:
       - name: twentycrm-worker
@@ -42,7 +42,7 @@ spec:
         imagePullPolicy: Always
         envFrom:
           - secretRef:
-              name: {{ .Release.Name }}-app-secrets
+              name: twentycrm-app-secrets
         env:
         - name: SERVER_URL
           value: "{{ if .Values.ingress.ssl.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}"

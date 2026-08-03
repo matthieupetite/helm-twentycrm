@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-server
+  name: twentycrm-server
   labels:
     app: {{ template "name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
@@ -37,8 +37,9 @@ spec:
       volumes:
       - name: twentycrm-server-data
         persistentVolumeClaim:
-          claimName: {{ .Release.Name }}-server-pvc
+          claimName: twentycrm-server-pvc
 
+      {{- if .Values.db.enabled }}
       initContainers:
         # Wait for database to be ready before starting
         - name: wait-db-ready
@@ -47,7 +48,7 @@ spec:
             - sh
             - -c
             - |
-              until pg_isready -h {{ .Release.Name }}-db -p 5432 -U {{ .Values.db.user }}; do
+              until pg_isready -h twentycrm-db -p 5432 -U {{ .Values.db.user }}; do
                 echo "Waiting for database..."
                 sleep 2
               done
@@ -55,8 +56,9 @@ spec:
           - name: PGPASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ .Release.Name }}-app-secrets
+                name: twentycrm-app-secrets
                 key: PG_DATABASE_URL
+      {{- end }}
 
       containers:
       - name: twentycrm-server
@@ -64,7 +66,7 @@ spec:
         imagePullPolicy: Always
         envFrom:
           - secretRef:
-              name: {{ .Release.Name }}-app-secrets
+              name: twentycrm-app-secrets
 
         env:
         - name: NODE_PORT

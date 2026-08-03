@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-08-03
+
+### ⚠️ BREAKING CHANGES
+- **Resource Naming:** All Kubernetes resources now use fixed names with `twentycrm-` prefix instead of release name
+  - Deployments: `twentycrm-server`, `twentycrm-worker`, `twentycrm-db`, `twentycrm-redis`
+  - Services: `twentycrm-server`, `twentycrm-db`, `twentycrm-redis`
+  - PVCs: `twentycrm-server-pvc`, `twentycrm-db-pvc`
+  - Secret: `twentycrm-app-secrets`
+  - Ingress: `twentycrm`
+
+### Fixed
+- **Init Container:** Database readiness check now only runs when using internal database (`db.enabled: true`)
+  - Prevents infinite wait when using external database
+  - Init container is skipped when `externalDb.enabled: true`
+
+### Why this change?
+- **Consistency:** Resource names are now predictable and don't depend on Helm release name
+- **Multi-tenancy:** Easier to reference resources from external systems (e.g., ArgoCD)
+- **Simplicity:** No need to track release name to find resources
+
+### Migration Guide
+If upgrading from v0.4.x:
+1. Backup your data (database and PVCs)
+2. Uninstall the old release: `helm uninstall <release-name>`
+3. Install new version: `helm install twentycrm twentycrm/twentycrm`
+4. Restore data if needed
+
 ## [0.4.1] - 2026-08-03
 
 ### Fixed
