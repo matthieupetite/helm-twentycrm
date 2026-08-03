@@ -61,9 +61,6 @@ redis:
     requests:
       memory: "128Mi"
       cpu: "20m"
-
-
-
 ingress:
   enabled: true
   host: crm.example.com
