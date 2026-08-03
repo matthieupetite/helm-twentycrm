@@ -38,17 +38,25 @@ spec:
       - name: twentycrm-server-data
         persistentVolumeClaim:
           claimName: {{ .Release.Name }}-server-pvc
-      - name: twentycrm-docker-data
-        emptyDir: {}
 
       initContainers:
-        # if it's not ready at first start the db setup fail badly
+        # Wait for database to be ready before starting
         - name: wait-db-ready
-          image: {{ .Values.db.image }}
-          command: ["pg_isready", "-d", "$(PG_DATABASE_URL)" ]
-          envFrom:
-          - secretRef:
-              name: {{ .Release.Name }}-app-secrets
+          image: postgres:16
+          command: 
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ .Release.Name }}-db -p 5432 -U {{ .Values.db.user }}; do
+                echo "Waiting for database..."
+                sleep 2
+              done
+          env:
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }}-app-secrets
+                key: PG_DATABASE_URL
 
       containers:
       - name: twentycrm-server
@@ -57,18 +65,16 @@ spec:
         envFrom:
           - secretRef:
               name: {{ .Release.Name }}-app-secrets
-          - secretRef:
-              name: {{ .Release.Name }}-app-tokens
 
         env:
-        - name: PORT
+        - name: NODE_PORT
           value: "3000"
         - name: SERVER_URL
           value: "https://{{ .Values.ingress.host }}"
         - name: DISABLE_DB_MIGRATIONS
           value: "false"
-        - name: "MESSAGE_QUEUE_TYPE"
-          value: "bull-mq"
+        - name: DISABLE_CRON_JOBS_REGISTRATION
+          value: "false"
 
         ports:
         - containerPort: 3000
@@ -77,15 +83,21 @@ spec:
         resources:
           {{- toYaml .Values.server.resources | indent 12 | printf "\n%s" }}
         volumeMounts:
-        - mountPath: /app/docker-data
-          name: twentycrm-docker-data
         - mountPath: /app/packages/twenty-server/.local-storage
           name: twentycrm-server-data
-        #livenessProbe:
-        #  httpGet:
-        #    path: "/healthz"
-        #    port: 3000
-        #readinessProbe:
-        #  httpGet:
-        #    path: "/healthz"
-        #    port: 3000
+        livenessProbe:
+          httpGet:
+            path: "/healthz"
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: "/healthz"
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3

@@ -1,4 +1,15 @@
-apiVersion: v1
-description: A Helm chart for https://github.com/twentyhq/twenty
+apiVersion: v2
+description: A Helm chart for Twenty CRM - https://github.com/twentyhq/twenty
 name: twentycrm
-version: 0.2.0
+version: 0.3.0
+appVersion: latest
+keywords:
+  - crm
+  - twenty
+  - customer-relationship-management
+home: https://twenty.com
+sources:
+  - https://github.com/twentyhq/twenty
+maintainers:
+  - name: matthieupetite
+    url: https://github.com/matthieupetite

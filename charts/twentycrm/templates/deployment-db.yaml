@@ -30,8 +30,6 @@ spec:
         release: {{ .Release.Name }}
         role: db
     spec:
-      securityContext:
-        fsGroup: 1001
       volumes:
       - name: twentycrm-db-data
         persistentVolumeClaim:
@@ -42,26 +40,12 @@ spec:
         image: {{ .Values.db.image }}
         imagePullPolicy: Always
         env:
+        - name: POSTGRES_DB
+          value: {{ .Values.db.database | quote }}
+        - name: POSTGRES_USER
+          value: {{ .Values.db.user | quote }}
         - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-app-secrets
-              key: PG_PASSWORD
-
-        - name: POSTGRESQL_POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-app-secrets
-              key: PG_ADMIN_PASSWORD
-
-        - name: POSTGRES_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-app-secrets
-              key: PG_DATABASE
-
-        - name: BITNAMI_DEBUG
-          value: "true"
+          value: {{ .Values.db.password | quote }}
         ports:
         - containerPort: 5432
           name: tcp
@@ -69,6 +53,34 @@ spec:
         resources:
           {{- toYaml .Values.db.resources | indent 12 | printf "\n%s" }}
         volumeMounts:
-        - mountPath: /bitnami/postgresql
+        - mountPath: /var/lib/postgresql/data
           name: twentycrm-db-data
+        livenessProbe:
+          exec:
+            command:
+              - pg_isready
+              - -U
+              - {{ .Values.db.user }}
+              - -h
+              - localhost
+              - -d
+              - {{ .Values.db.database }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+        readinessProbe:
+          exec:
+            command:
+              - pg_isready
+              - -U
+              - {{ .Values.db.user }}
+              - -h
+              - localhost
+              - -d
+              - {{ .Values.db.database }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
 {{- end }}

@@ -31,6 +31,11 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
     spec:
+      volumes:
+      - name: twentycrm-server-data
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-server-pvc
+          
       containers:
       - name: twentycrm-worker
         image: {{ .Values.image }}
@@ -38,21 +43,20 @@ spec:
         envFrom:
           - secretRef:
               name: {{ .Release.Name }}-app-secrets
-          - secretRef:
-              name: {{ .Release.Name }}-app-tokens
         env:
         - name: SERVER_URL
           value: "https://{{ .Values.ingress.host }}"
         - name: DISABLE_DB_MIGRATIONS
           value: "true"
-        - name: SIGN_IN_PREFILLED
+        - name: DISABLE_CRON_JOBS_REGISTRATION
           value: "true"
-        - name: "MESSAGE_QUEUE_TYPE"
-          value: "pg-boss"
 
         command:
           - yarn
           - worker:prod
         resources:
           {{- toYaml .Values.worker.resources | indent 12 | printf "\n%s" }}
+        volumeMounts:
+        - mountPath: /app/packages/twenty-server/.local-storage
+          name: twentycrm-server-data
 
