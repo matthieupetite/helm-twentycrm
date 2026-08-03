@@ -7,6 +7,9 @@ metadata:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  annotations:
+    # Validate storage configuration for HA deployments
+    validation: {{ include "twentycrm.validateStorage" . | quote }}
 
 spec:
   progressDeadlineSeconds: 600

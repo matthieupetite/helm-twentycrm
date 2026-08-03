@@ -30,6 +30,9 @@ server:
   replicas: 1
   storage: 5Gi
   #storageClassName:
+  # Storage access mode - use "ReadWriteMany" for HA deployments with multiple replicas
+  # Requires RWX-capable storage class (ceph-cephfs, nfs, efs, azurefile, etc.)
+  storageAccessMode: "ReadWriteOnce"
   resources:
     requests:
       memory: "128Mi"

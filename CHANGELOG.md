@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-08-03
+
+### Added
+- **High Availability Support:** Configurable storage access mode for HA deployments
+  - New `server.storageAccessMode` parameter (default: `ReadWriteOnce`)
+  - Enables multi-replica deployments with ReadWriteMany-capable storage (CephFS, NFS, EFS, Azure Files, etc.)
+  - Automatic validation prevents misconfiguration (HA deployment with RWO storage)
+  - Comprehensive documentation for storage requirements and HA configuration
+
+### Why this change?
+- **Problem:** Previous versions hard-coded `ReadWriteOnce` access mode, preventing HA deployments
+- **Impact:** Users couldn't scale beyond 1 server + 1 worker without Multi-Attach errors on Ceph RBD and similar storage
+- **Solution:** Configurable access mode allows users to choose based on their storage backend
+- **Backward Compatible:** Defaults to `ReadWriteOnce` for existing single-instance deployments
+
+### Storage Backend Compatibility
+
+| Deployment Type | Storage Backend | Access Mode | Configuration |
+|----------------|----------------|-------------|---------------|
+| Single Instance | Block storage (RBD, EBS, Disk) | `ReadWriteOnce` | Default - no changes needed |
+| High Availability (HA) | File storage (CephFS, NFS, EFS, Azure Files) | `ReadWriteMany` | Set `server.storageAccessMode: ReadWriteMany` |
+
+### Migration Guide
+
+**For existing single-instance deployments:** No changes required. Default behavior preserved.
+
+**For new HA deployments:**
+```yaml
+server:
+  replicas: 2  # or more
+  storageAccessMode: "ReadWriteMany"
+  storageClassName: "ceph-cephfs"  # or nfs, efs, azurefile
+
+worker:
+  replicas: 2  # or more
+```
+
 ## [0.5.0] - 2026-08-03
 
 ### ⚠️ BREAKING CHANGES

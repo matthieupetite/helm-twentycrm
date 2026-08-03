@@ -28,6 +28,78 @@ secrets:
 
 **WARNING:** Keep this key secure! Losing it means losing access to all encrypted secrets in the database.
 
+## Storage Requirements
+
+Twenty CRM requires persistent storage that is **shared between server and worker pods**. The storage requirements depend on your deployment strategy:
+
+### Single Instance Deployment
+
+For non-HA deployments (1 server + 1 worker), any storage class works:
+
+```yaml
+server:
+  replicas: 1
+  storage: 10Gi
+  storageAccessMode: "ReadWriteOnce"  # RWO is sufficient
+  storageClassName: "standard"         # Any block storage (ceph-rbd, ebs, etc.)
+  
+worker:
+  replicas: 1
+```
+
+**Supported storage backends:**
+- Block storage: Ceph RBD, AWS EBS, Azure Disk, GCP Persistent Disk
+- Any storage class with `ReadWriteOnce` (RWO) support
+
+### High Availability Deployment
+
+For HA deployments (multiple replicas), you **must** use `ReadWriteMany` storage:
+
+```yaml
+server:
+  replicas: 2  # or more
+  storage: 20Gi
+  storageAccessMode: "ReadWriteMany"   # RWX required for HA
+  storageClassName: "ceph-cephfs"      # Must support ReadWriteMany
+  
+worker:
+  replicas: 2  # or more
+```
+
+**Supported RWX storage classes:**
+
+| Storage Backend | Storage Class | Provider |
+|----------------|---------------|----------|
+| Ceph CephFS | `ceph-cephfs` | Self-hosted Ceph |
+| NFS | `nfs`, `nfs-client` | NFS server |
+| AWS EFS | `efs` | Amazon Web Services |
+| Azure Files | `azurefile`, `azurefile-premium` | Microsoft Azure |
+| GCP Filestore | `filestore` | Google Cloud Platform |
+| Longhorn | `longhorn` | Rancher Longhorn |
+
+**⚠️ Important:** Block storage like `ceph-rbd`, `ebs`, `azure-disk` only supports `ReadWriteOnce` and **cannot** be used for HA deployments with multiple pods.
+
+### Storage Configuration Reference
+
+| Field Name | Description | Default | Required for HA |
+|-----------|-------------|---------|-----------------|
+| `server.storage` | PVC size | `5Gi` | Increase for production |
+| `server.storageClassName` | Storage class to use | Default cluster class | Must support RWX for HA |
+| `server.storageAccessMode` | Access mode (`ReadWriteOnce` or `ReadWriteMany`) | `ReadWriteOnce` | Must be `ReadWriteMany` for HA |
+
+### Validation
+
+The chart automatically validates your configuration and will fail with a helpful error message if you try to deploy HA with incompatible storage:
+
+```
+ERROR: High Availability deployment detected (2 server + 2 worker replicas = 4 total pods) 
+but storage is configured as ReadWriteOnce.
+
+To fix this issue, you need to:
+1. Use a ReadWriteMany-capable storage class (ceph-cephfs, nfs, efs, azurefile, etc.)
+2. Set server.storageAccessMode to 'ReadWriteMany' in your values.yaml
+```
+
 ## Configuration
 
 For a complete list of configuration fields, check the [values.yaml](./charts/twentycrm/values.yaml) file.
@@ -43,6 +115,7 @@ For a complete list of configuration fields, check the [values.yaml](./charts/tw
 | `server.replicas`                | Number of server replicas.                                                               | `1`                     |
 | `server.storage`                 | Storage size for the server.                                                             | `5Gi`                   |
 | `server.storageClassName`        | Storage class name for server persistence.                                               |                         |
+| `server.storageAccessMode`       | Storage access mode (`ReadWriteOnce` or `ReadWriteMany`)                                | `ReadWriteOnce`         |
 | `server.resources.requests.memory` | Memory resource request for the server.                                                 | `128Mi`                 |
 | `server.resources.requests.cpu`  | CPU resource request for the server.                                                    | `100m`                  |
 | `worker.replicas`                | Number of worker replicas.                                                               | `1`                     |
@@ -150,6 +223,75 @@ externalDb:
   postgresConnectionString: "postgres://user:password@db-host:5432/twentycrm"
 ```
 
+### High Availability Deployment
+
+For production HA deployment with multiple replicas:
+
+```yaml
+# values-ha.yaml
+image: twentycrm/twenty:latest
+
+secrets:
+  encryptionKey: "your-base64-encoded-key-here"
+
+# HA Configuration: Multiple server replicas
+server:
+  replicas: 2  # or 3 for higher availability
+  storage: 20Gi
+  storageClassName: "ceph-cephfs"  # Must support ReadWriteMany
+  storageAccessMode: "ReadWriteMany"  # Required for multiple pods
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# HA Configuration: Multiple worker replicas
+worker:
+  replicas: 2
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# Internal PostgreSQL (or use external with externalDb)
+db:
+  enabled: true
+  storage: 50Gi
+  storageClassName: "ceph-rbd"  # Block storage is fine for single DB pod
+  password: "strong-random-password"
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Internal Redis (or use external with externalRedis)
+redis:
+  enabled: true
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+
+ingress:
+  enabled: true
+  host: crm.example.com
+  class: nginx
+  ssl:
+    enabled: true
+    clusterIssuer: "letsencrypt-prod"
+```
+
+Deploy with:
+```bash
+helm upgrade -i twentycrm twentycrm/twentycrm -f values-ha.yaml
+```
+
 ### Complete Example
 
 ```yaml
@@ -162,6 +304,8 @@ secrets:
 server:
   replicas: 2
   storage: 10Gi
+  storageClassName: "ceph-cephfs"
+  storageAccessMode: "ReadWriteMany"  # Required for HA
   resources:
     requests:
       memory: "512Mi"

@@ -9,7 +9,7 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   accessModes:
-    - "ReadWriteOnce"
+    - {{ .Values.server.storageAccessMode | quote }}
   resources:
     requests:
       storage: {{ .Values.server.storage }}
